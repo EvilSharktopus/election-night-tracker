@@ -384,6 +384,11 @@ export const useGameStore = create<GameState>()(
     updatePartyLogo: (partyId, logo) => set((state) => {
       const party = state.parties.find(p => p.id === partyId);
       if (party) party.logo = logo;
+    }),
+
+    updatePartyPassword: (partyId, password) => set((state) => {
+      const party = state.parties.find(p => p.id === partyId);
+      if (party) party.password = password;
     })
   }))
 );
