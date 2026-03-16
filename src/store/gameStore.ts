@@ -362,9 +362,13 @@ export const useGameStore = create<GameState>()(
       state.queuedActions = state.queuedActions.filter(a => a.id !== actionReq.id);
 
       if (logMessage) {
-        state.actionLog.slice(-7); // Keep recent
+        if (state.actionLog.length >= 7) {
+          state.actionLog = state.actionLog.slice(state.actionLog.length - 6); // Keep recent
+        }
+        
+        const newLogId = generateId();
         state.actionLog.push({
-          id: generateId(),
+          id: newLogId,
           round: state.round,
           message: logMessage,
           actionType: payload.actionType,
@@ -372,6 +376,19 @@ export const useGameStore = create<GameState>()(
           timestamp: Date.now(),
           metadata: logMetadata || { targetRegionId: payload.targetRegionId }
         });
+
+        // Trigger AI flavor text generation asynchronously, then dispatch a second action to update the text
+        const tParty = state.parties.find(p => p.id === payload.targetPartyId);
+        const tRiding = state.ridings.find(r => r.id === payload.targetRidingId);
+        
+        import('../utils/flavorText').then(({ generateFlavorText }) => {
+          generateFlavorText(
+            { actionType: payload.actionType, partyName: sourceParty.name, targetPartyName: tParty?.name, ridingName: tRiding?.name },
+            logMessage
+          ).then(msg => {
+            useGameStore.getState().updateLogMessage(newLogId, msg);
+          });
+        }).catch(err => console.error('[GameStore] Failed to trigger flavor text:', err));
       }
     }),
 

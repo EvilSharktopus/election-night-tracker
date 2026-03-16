@@ -33,7 +33,6 @@ export function TeacherDashboard() {
   const grantAP = useGameStore(state => state.grantAP);
   const setupGame = useGameStore(state => state.setupGame);
   const applyAction = useGameStore(state => state.applyAction);
-  const updateLogMessage = useGameStore(state => state.updateLogMessage);
   const queuedActions = useGameStore(state => state.queuedActions);
   const removeQueuedAction = useGameStore(state => state.removeQueuedAction);
   const overwriteState = useGameStore(state => state.overwriteState);
@@ -444,20 +443,7 @@ export function TeacherDashboard() {
                                 removeQueuedAction(req.id);
                                 toast.success(`✅ Approved: ${actor?.name} — ${req.payload.actionType}`);
                                 
-                                // Async: replace the plain log message with AI flavor text
-                                const newEntries = useGameStore.getState().actionLog;
-                                const newEntry = newEntries[newEntries.length - 1];
-                                
-                                if (newEntry) {
-                                  import('../utils/flavorText').then(({ generateFlavorText }) => {
-                                    const tParty = parties.find(p => p.id === req.payload.targetPartyId);
-                                    const tRiding = ridings.find(r => r.id === req.payload.targetRidingId);
-                                    generateFlavorText(
-                                      { actionType: req.payload.actionType, partyName: actor?.name ?? 'A party', targetPartyName: tParty?.name, ridingName: tRiding?.name },
-                                      newEntry.message
-                                    ).then(msg => updateLogMessage(newEntry.id, msg));
-                                  }).catch(err => console.error('[Ticker] Failed to import flavorText:', err));
-                                }
+                                // The AI flavor text generation is now handled directly inside gameStore's applyAction
                               }}
                               className="flex-1 bg-green-700 hover:bg-green-600 text-white text-sm font-bold py-1.5 px-3 rounded transition-colors"
                             >
