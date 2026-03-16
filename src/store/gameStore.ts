@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { GameState, Phase } from '../types/game';
+import { generateFlavorText } from '../utils/flavorText';
 
 // Helper to generate IDs
 const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -163,6 +164,13 @@ export const useGameStore = create<GameState>()(
             actionType: "fundraise", sourcePartyId: sourceParty.id,
             timestamp: Date.now(), metadata: { amount: yieldAmt }
           });
+          
+          // Also generate flavor text for fundraise!
+          const newLogId = state.actionLog[state.actionLog.length - 1].id;
+          const fundraiseSource = sourceParty.name;
+          generateFlavorText({ actionType: 'fundraise', partyName: fundraiseSource, amount: yieldAmt }, fundraiseMsg, state.aiPrompt)
+            .then(msg => useGameStore.getState().updateLogMessage(newLogId, msg));
+            
           logMessage = '';
           break;
         }
@@ -377,18 +385,21 @@ export const useGameStore = create<GameState>()(
           metadata: logMetadata || { targetRegionId: payload.targetRegionId }
         });
 
+        console.log('[GameStore] Action added:', logMessage, newLogId);
+
         // Trigger AI flavor text generation asynchronously, then dispatch a second action to update the text
-        const tParty = state.parties.find(p => p.id === payload.targetPartyId);
-        const tRiding = state.ridings.find(r => r.id === payload.targetRidingId);
+        const tPartyName = state.parties.find(p => p.id === payload.targetPartyId)?.name;
+        const tRidingName = state.ridings.find(r => r.id === payload.targetRidingId)?.name;
+        const sourceName = sourceParty.name;
         
-        import('../utils/flavorText').then(({ generateFlavorText }) => {
-          generateFlavorText(
-            { actionType: payload.actionType, partyName: sourceParty.name, targetPartyName: tParty?.name, ridingName: tRiding?.name },
-            logMessage
-          ).then(msg => {
-            useGameStore.getState().updateLogMessage(newLogId, msg);
-          });
-        }).catch(err => console.error('[GameStore] Failed to trigger flavor text:', err));
+        generateFlavorText(
+          { actionType: payload.actionType, partyName: sourceName, targetPartyName: tPartyName, ridingName: tRidingName },
+          logMessage,
+          state.aiPrompt
+        ).then(msg => {
+          console.log('[GameStore] updated message received:', msg);
+          useGameStore.getState().updateLogMessage(newLogId, msg);
+        });
       }
     }),
 
