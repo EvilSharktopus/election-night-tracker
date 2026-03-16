@@ -440,14 +440,15 @@ export function TeacherDashboard() {
                           <div className="flex gap-2">
                             <button
                               onClick={() => {
-                                const logBefore = useGameStore.getState().actionLog.length;
                                 applyAction(req);
                                 removeQueuedAction(req.id);
                                 toast.success(`✅ Approved: ${actor?.name} — ${req.payload.actionType}`);
+                                
                                 // Async: replace the plain log message with AI flavor text
                                 const newEntries = useGameStore.getState().actionLog;
                                 const newEntry = newEntries[newEntries.length - 1];
-                                if (newEntry && newEntries.length > logBefore) {
+                                
+                                if (newEntry) {
                                   import('../utils/flavorText').then(({ generateFlavorText }) => {
                                     const tParty = parties.find(p => p.id === req.payload.targetPartyId);
                                     const tRiding = ridings.find(r => r.id === req.payload.targetRidingId);
@@ -455,7 +456,7 @@ export function TeacherDashboard() {
                                       { actionType: req.payload.actionType, partyName: actor?.name ?? 'A party', targetPartyName: tParty?.name, ridingName: tRiding?.name },
                                       newEntry.message
                                     ).then(msg => updateLogMessage(newEntry.id, msg));
-                                  });
+                                  }).catch(err => console.error('[Ticker] Failed to import flavorText:', err));
                                 }
                               }}
                               className="flex-1 bg-green-700 hover:bg-green-600 text-white text-sm font-bold py-1.5 px-3 rounded transition-colors"
