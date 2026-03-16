@@ -95,6 +95,7 @@ export function StudentPortal() {
     if (actionType === 'purchase_upgrade') finalCost = UPGRADE_COSTS[upgradeId] ?? 5;
     if (actionType === 'hack') finalCost = HACK_COST;
     if (actionType === 'purchase_dark_op') finalCost = DARK_OP_COST;
+    if (actionType === 'research') finalCost = 2;
     return {
       partyId: party.id,
       actionType,
@@ -120,6 +121,10 @@ export function StudentPortal() {
     }
     if (actionType === 'campaign' && party.funds < (parseInt(costText) || 0)) {
       toast.error(`Not enough funds! Need $${costText}, have $${party.funds}.`);
+      return;
+    }
+    if (actionType === 'research' && party.funds < 2) {
+      toast.error(`Not enough funds! Research costs $2, you have $${party.funds}.`);
       return;
     }
     if (actionType === 'hack') {
@@ -574,7 +579,7 @@ export function StudentPortal() {
                 const desc: Record<string, string> = {
                   fundraise:        '💰 Spin the wheel for $5–$10. No targeting needed — just pure cash.',
                   campaign:         '📣 Invest funds into a riding. Choose a demographic and medium to maximise your score. Strong demo = 2× boost; weak demo = 0.5×.',
-                  research:         '🔬 Secretly reveal the strong and weak demographics for a riding. Only you can see the results.',
+                  research:         '🔬 Secretly reveal the strong and weak demographics for a riding. Costs $2. Only you can see the results.',
                   recon:            '🕵️ Spy on another party — see their AP, Funds, and current seat count.',
                   scandal:          '📰 Leak a damaging story about a rival party. Costs 2 AP and reduces their effectiveness this round.',
                   misinformation:   '🎭 Plant a hidden trap in a riding. The next party to campaign there gets a negative result instead.',
