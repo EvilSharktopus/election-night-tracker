@@ -10,12 +10,13 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ActionPayload } from '../types/game';
+import { useGameStore } from '../store/gameStore';
 
 const API_KEY = "AIzaSyBsif5gA450l4zD2WO8O40g37T2-ZWumaM";
 
 const ai = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
 
-const SYSTEM_PROMPT = `You are a comedic Canadian political news anchor writing breaking-news ticker headlines for a classroom election simulation game. Keep headlines SHORT (max 15 words), punchy, and whimsical. Use Canadian cultural references when appropriate (hockey, Tim Hortons, poutine, the CBC, etc.). Do NOT use quotation marks. Reply with only the headline, no punctuation at the end.`;
+export const SYSTEM_PROMPT = `Using SimCity style whimsy as your inspiration,You are a comedic Canadian political news anchor writing breaking-news ticker headlines for a classroom election simulation game. Keep headlines SHORT (max 15 words), punchy, and whimsical. Use Canadian cultural references when appropriate (hockey, Tim Hortons, poutine, the CBC, etc.). Do NOT use quotation marks. Reply with only the headline, no punctuation at the end.`;
 
 interface FlavorContext {
   actionType: ActionPayload['actionType'];
@@ -29,11 +30,13 @@ export async function generateFlavorText(ctx: FlavorContext, fallback: string): 
   if (!ai) return fallback;
 
   const prompt = buildPrompt(ctx);
+  // Pull from store if the teacher customized it, otherwise use default
+  const activePrompt = useGameStore.getState().aiPrompt || SYSTEM_PROMPT;
 
   try {
     const model = ai.getGenerativeModel({
       model: 'gemini-1.5-flash',
-      systemInstruction: SYSTEM_PROMPT
+      systemInstruction: activePrompt
     });
     const result = await model.generateContent(prompt);
     const text = result.response.text().trim().replace(/['"]/g, '').replace(/\.$/, '');

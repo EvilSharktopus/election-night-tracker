@@ -14,6 +14,7 @@ const initialState = {
   actionLog: [],
   queuedActions: [],
   darkOps: [],
+  aiPrompt: '',
 };
 
 const HACK_BASE_CHANCE = 0.5;
@@ -30,7 +31,7 @@ export const useGameStore = create<GameState>()(
   immer((set) => ({
     ...initialState,
 
-    setupGame: (partiesData, ridingsData, maxRounds = 4) => set((state) => {
+    setupGame: (partiesData, ridingsData, maxRounds = 4, aiPrompt = '') => set((state) => {
       state.parties = partiesData.map(p => ({
         ...p,
         ap: 3,
@@ -53,6 +54,7 @@ export const useGameStore = create<GameState>()(
       state.actionLog = [];
       state.queuedActions = [];
       state.darkOps = [];
+      if (aiPrompt.trim()) state.aiPrompt = aiPrompt.trim();
     }),
 
     advanceRound: () => set((state) => {

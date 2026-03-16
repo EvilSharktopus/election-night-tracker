@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
 import { generateDefaultRidings, RidingTemplate, REGIONS } from '../data/ridings';
 import { Demographic } from '../types/game';
+import { SYSTEM_PROMPT } from '../utils/flavorText'; // Added this import
 import toast from 'react-hot-toast';
 
 const DEMO_OPTIONS: Demographic[] = ['Youth', 'Seniors', 'Workers', 'Business'];
@@ -45,6 +46,7 @@ export function SetupHub() {
   const [defaultAP, setDefaultAP] = useState(3);
   const [defaultFunds, setDefaultFunds] = useState(0);
   const [maxRounds, setMaxRounds] = useState(10);
+  const [customPrompt, setCustomPrompt] = useState(SYSTEM_PROMPT);
   const [showDemos, setShowDemos] = useState(true);
 
   // ── Party helpers ──────────────────────────────────────────────
@@ -96,7 +98,8 @@ export function SetupHub() {
     setupGame(
       validParties.map(p => ({ id: slugify(p.name), name: p.name.trim(), color: p.color, logo: p.logo })),
       ridings,
-      maxRounds
+      maxRounds,
+      customPrompt
     );
     // Apply custom starting AP/Funds per party
     const store = useGameStore.getState();
@@ -320,6 +323,25 @@ export function SetupHub() {
                 className="text-xs text-purple-400 hover:text-purple-300 font-bold transition-colors border border-purple-900 hover:border-purple-700 px-3 py-1.5 rounded-lg">
                 🎲 Reshuffle Demographics
               </button>
+              {/* AI Ticker Setting */}
+              <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 shadow-inner">
+                <h3 className="font-bold text-lg mb-2 text-blue-400">🤖 AI Ticker Prompt</h3>
+                <p className="text-sm text-neutral-400 mb-4 whitespace-normal">
+                  Customize how the AI reports news on the projector. You can change its personality, tone, or specific instructions for generating headlines.
+                </p>
+                <textarea
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  className="w-full h-32 bg-slate-800 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-blue-500 font-mono leading-relaxed"
+                />
+                <button
+                  onClick={() => { setCustomPrompt(SYSTEM_PROMPT); toast.success('Reset to default text!'); }}
+                  className="text-xs text-blue-400 hover:text-blue-300 font-bold mt-2"
+                >
+                  Reset to Default
+                </button>
+              </div>
+
             </div>
           </div>
 
