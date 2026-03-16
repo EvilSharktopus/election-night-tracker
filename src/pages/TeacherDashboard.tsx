@@ -289,8 +289,8 @@ export function TeacherDashboard() {
               Student Portal Links
             </h3>
             <div className="flex flex-col gap-1.5">
-              {parties.map(p => {
-                const url = `${window.location.origin}/party/${p.id}`;
+              {parties.map((p, idx) => {
+                const url = `${window.location.origin}/party/${idx}`;
                 return (
                   <div key={p.id} className="bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2">
                     <div className="flex items-center gap-2 mb-1">
@@ -298,7 +298,7 @@ export function TeacherDashboard() {
                       <span className="text-xs font-bold text-white">{p.name}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <code className="text-[10px] text-sky-400 font-mono flex-1 truncate select-all">/party/{p.id}</code>
+                      <code className="text-[10px] text-sky-400 font-mono flex-1 truncate select-all">/party/{idx}</code>
                       <button
                         onClick={() => { navigator.clipboard.writeText(url); toast.success(`Copied ${p.name} link!`); }}
                         className="text-neutral-500 hover:text-white text-xs transition-colors flex-shrink-0 px-1"

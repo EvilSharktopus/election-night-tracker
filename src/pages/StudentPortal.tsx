@@ -60,7 +60,8 @@ export function StudentPortal() {
   const [targetRegionId, setTargetRegionId] = useState('');
   const [note, setNote] = useState('');
 
-  const party = parties.find(p => p.id === partyIdParam);
+  const partyIndex = parseInt(partyIdParam || '0', 10);
+  const party = parties[partyIndex];
 
   // Simple PIN = party name lowercase, first 4 chars
   const expectedPin = party ? party.name.toLowerCase().slice(0, 4) : '';
@@ -95,7 +96,7 @@ export function StudentPortal() {
     if (actionType === 'hack') finalCost = HACK_COST;
     if (actionType === 'purchase_dark_op') finalCost = DARK_OP_COST;
     return {
-      partyId: partyIdParam!,
+      partyId: party.id,
       actionType,
       targetRidingId: targetRidingId || undefined,
       targetPartyId: targetPartyId || undefined,
@@ -178,7 +179,7 @@ export function StudentPortal() {
         <Toaster position="top-center" />
         <div className="text-4xl animate-pulse">🗳️</div>
         <p className="text-neutral-400 text-lg">Waiting for game to start...</p>
-        <p className="text-neutral-600 text-sm">URL: /party/{partyIdParam}</p>
+        <p className="text-neutral-600 text-sm">URL: /party/{partyIndex}</p>
       </div>
     );
   }
@@ -188,7 +189,7 @@ export function StudentPortal() {
       <div className="flex h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black text-red-400 flex-col gap-4">
         <Toaster position="top-center" />
         <p className="text-xl font-bold">Party not found.</p>
-        <p className="text-neutral-500 text-sm">Check your link: /party/{partyIdParam}</p>
+        <p className="text-neutral-500 text-sm">Check your link: /party/{partyIndex}</p>
       </div>
     );
   }
@@ -205,7 +206,7 @@ export function StudentPortal() {
               <div className="w-10 h-10 rounded-full border-4 border-white" style={{ backgroundColor: party.color }} />
             )}
             <h2 className="text-xl font-black uppercase tracking-wide">{party.name}</h2>
-            <p className="text-neutral-500 text-sm">Enter your party PIN to proceed</p>
+            <p className="text-neutral-500 text-sm">PIN or custom password for Party {partyIndex}</p>
           </div>
           <input
             type="password"
