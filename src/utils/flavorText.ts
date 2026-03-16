@@ -10,7 +10,6 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ActionPayload } from '../types/game';
-import { useGameStore } from '../store/gameStore';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 console.log('Gemini key:', API_KEY);
@@ -27,14 +26,14 @@ interface FlavorContext {
   amount?: number;
 }
 
-export async function generateFlavorText(ctx: FlavorContext, fallback: string): Promise<string> {
+export async function generateFlavorText(ctx: FlavorContext, fallback: string, customPrompt?: string): Promise<string> {
   console.log('[Gemini] generateFlavorText called with ctx:', ctx, 'fallback:', fallback);
   console.log('[Gemini] is AI initialized?', !!ai);
   if (!ai) return fallback;
 
   const prompt = buildPrompt(ctx);
   // Pull from store if the teacher customized it, otherwise use default
-  const activePrompt = useGameStore.getState().aiPrompt || SYSTEM_PROMPT;
+  const activePrompt = customPrompt || SYSTEM_PROMPT;
 
   try {
     const model = ai.getGenerativeModel({
