@@ -13,6 +13,7 @@ import { ActionPayload } from '../types/game';
 import { useGameStore } from '../store/gameStore';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+console.log('Gemini key:', API_KEY);
 
 const ai = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
 
@@ -27,6 +28,8 @@ interface FlavorContext {
 }
 
 export async function generateFlavorText(ctx: FlavorContext, fallback: string): Promise<string> {
+  console.log('[Gemini] generateFlavorText called with ctx:', ctx, 'fallback:', fallback);
+  console.log('[Gemini] is AI initialized?', !!ai);
   if (!ai) return fallback;
 
   const prompt = buildPrompt(ctx);
@@ -38,11 +41,13 @@ export async function generateFlavorText(ctx: FlavorContext, fallback: string): 
       model: 'gemini-1.5-flash',
       systemInstruction: activePrompt
     });
+    console.log('[Gemini] requesting content with prompt:', prompt);
     const result = await model.generateContent(prompt);
     const text = result.response.text().trim().replace(/['"]/g, '').replace(/\.$/, '');
+    console.log('[Gemini] generated text:', text);
     return text || fallback;
   } catch (e) {
-    console.warn('[Gemini] Failed to generate flavor text, using fallback:', e);
+    console.error('[Gemini] Failed to generate flavor text:', e);
     return fallback;
   }
 }
