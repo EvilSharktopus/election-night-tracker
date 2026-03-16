@@ -106,9 +106,10 @@ export interface GameState {
   actionLog: LogEntry[];
   queuedActions: ActionRequest[];
   darkOps: DarkOp[];            // active dark operations 
+  aiPrompt?: string;            // custom prompt for AI headlines
   
   // Game Management Mutators
-  setupGame: (parties: Omit<Party, 'ap'|'funds'|'upgrades'|'researched'|'traps'|'scandalShieldActive'>[], ridings: Omit<Riding, 'campaignValues'|'rawInvestments'|'roundInvestments'|'scandalPenalties'>[], maxRounds?: number) => void;
+  setupGame: (parties: Omit<Party, 'ap'|'funds'|'upgrades'|'researched'|'traps'|'scandalShieldActive'>[], ridings: Omit<Riding, 'campaignValues'|'rawInvestments'|'roundInvestments'|'scandalPenalties'>[], maxRounds?: number, aiPrompt?: string) => void;
   advanceRound: () => void;
   setPhase: (phase: Phase) => void;
   grantAP: (amount: number, partyId?: string) => void;
