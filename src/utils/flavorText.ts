@@ -12,7 +12,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ActionPayload } from '../types/game';
 import { useGameStore } from '../store/gameStore';
 
-const API_KEY = "REDACTED_GEMINI_KEY";
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 const ai = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
 
