@@ -356,6 +356,96 @@ export function BoardView() {
   const regions = Array.from(new Set(ridings.map(r => r.region)));
   const regionRidings = ridings.filter(r => r.region === selectedRegion);
 
+  interface RegionStat {
+    region: string;
+    totalSeats: number;
+    claimedSeats: number;
+    leader: typeof parties[0] | undefined;
+    mostContested: {
+      riding: { name: string };
+      margin: number;
+      parties: [string, string] | null;
+    } | null;
+  }
+
+  // ── Regional Heat Map Stats ──
+  const heatMapStats: RegionStat[] = regions
+    .sort((a, b) => {
+      const order = ['BC', 'Alberta', 'Prairies', 'Ontario', 'Quebec', 'Atlantic'];
+      const ia = order.indexOf(a);
+      const ib = order.indexOf(b);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    })
+    .map(region => {
+      const rList = ridings.filter(r => r.region === region);
+      const totalRegionSeats = rList.reduce((sum, r) => sum + r.seats, 0);
+      
+      const regionSeatCounts: Record<string, number> = {};
+      parties.forEach(p => { regionSeatCounts[p.id] = 0; });
+      let claimedRegionSeats = 0;
+      
+      let mostContestedMargin = Infinity;
+      let mostContestedRiding: Riding | null = null;
+      let mostContestedParties: [string, string] | null = null;
+      
+      rList.forEach(r => {
+        let leaderId: string | null = null; 
+        let maxVal = -1;
+        let secondVal = -1;
+        let secondId: string | null = null;
+        Object.entries(r.campaignValues).forEach(([pId, val]) => {
+          if (val > maxVal) { 
+            secondVal = maxVal; 
+            secondId = leaderId;
+            maxVal = val; 
+            leaderId = pId; 
+          } else if (val > secondVal) {
+            secondVal = val;
+            secondId = pId;
+          }
+        });
+        
+        if (leaderId && maxVal > 0) {
+          regionSeatCounts[leaderId] += r.seats;
+          claimedRegionSeats += r.seats;
+        }
+
+        if (maxVal > 0 && secondVal > 0) {
+          const margin = maxVal - secondVal;
+          if (margin < mostContestedMargin) {
+            mostContestedMargin = margin;
+            mostContestedRiding = r;
+            mostContestedParties = [
+              parties.find(p => p.id === leaderId)?.name ?? 'Unknown',
+              parties.find(p => p.id === secondId)?.name ?? 'Unknown'
+            ];
+          }
+        }
+      });
+
+      let regionLeaderId: string | null = null;
+      let maxRegionSeats = 0;
+      Object.entries(regionSeatCounts).forEach(([pId, seats]) => {
+        if (seats > maxRegionSeats) {
+          maxRegionSeats = seats;
+          regionLeaderId = pId;
+        }
+      });
+      const regionLeader = parties.find(p => p.id === regionLeaderId);
+
+      return {
+        region,
+        totalSeats: totalRegionSeats,
+        claimedSeats: claimedRegionSeats,
+        leader: regionLeader,
+        mostContested: mostContestedRiding ? {
+          riding: mostContestedRiding,
+          margin: mostContestedMargin,
+          parties: mostContestedParties
+        } : null
+      };
+    });
+
   return (
     <div className={`h-screen flex flex-col overflow-hidden font-sans transition-colors duration-1000 ${isElectionNight ? 'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-900 via-slate-900 to-black text-white' : 'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black text-white'}`}>
 
@@ -553,17 +643,74 @@ export function BoardView() {
                   Waiting for game initialization...
                 </div>
               ) : (
-                <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
-                  {regions.map(region => (
-                    <RegionCard
-                      key={region}
-                      region={region}
-                      ridings={ridings.filter(r => r.region === region)}
-                      parties={parties}
-                      onClick={() => { setSelectedRegion(region); setDrillLevel('ridings'); }}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+                    {regions.map(region => (
+                      <RegionCard
+                        key={region}
+                        region={region}
+                        ridings={ridings.filter(r => r.region === region)}
+                        parties={parties}
+                        onClick={() => { setSelectedRegion(region); setDrillLevel('ridings'); }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Regional Heat Map Stats Row */}
+                  <div className="mt-8 border-t border-slate-800 pt-6">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-neutral-500 mb-4">Regional Heat Map</h3>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+                      {heatMapStats.map(stat => (
+                        <div key={stat.region} className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 flex flex-col gap-3">
+                          {/* Header */}
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-white tracking-wide">{stat.region}</span>
+                            <span className="text-[10px] text-neutral-500 font-mono">{stat.claimedSeats}/{stat.totalSeats} claimed</span>
+                          </div>
+                          
+                          {/* Leader */}
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: stat.leader?.color ?? '#475569' }} />
+                            <span className="text-sm font-bold truncate" style={{ color: stat.leader?.color ?? '#94a3b8' }}>
+                              {stat.leader?.name ?? 'Tossup'}
+                            </span>
+                          </div>
+
+                          {/* Progress Bar */}
+                          <div className="h-1.5 w-full bg-slate-700 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full rounded-full transition-all duration-1000" 
+                              style={{ 
+                                width: `${stat.totalSeats > 0 ? (stat.claimedSeats / stat.totalSeats) * 100 : 0}%`,
+                                backgroundColor: stat.leader?.color ?? '#475569'
+                              }} 
+                            />
+                          </div>
+
+                          {/* Most Contested */}
+                          <div className="mt-auto pt-2 border-t border-slate-700/50 flex flex-col gap-0.5 min-h-[50px]">
+                            <span className="text-[9px] uppercase tracking-wider text-rose-500 font-bold flex items-center gap-1">
+                              <span className="animate-pulse">●</span> Battleground
+                            </span>
+                            {stat.mostContested ? (
+                              <>
+                                <span className="text-xs text-neutral-300 font-bold truncate" title={stat.mostContested.riding.name}>
+                                  {stat.mostContested.riding.name}
+                                </span>
+                                <span className="text-[10px] text-neutral-500 truncate">
+                                  Margin: <span className="font-mono text-white">{stat.mostContested.margin}</span> 
+                                  <span className="opacity-50"> ({stat.mostContested.parties?.[0]} vs. {stat.mostContested.parties?.[1]})</span>
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-[10px] text-neutral-600 italic">No close races yet</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           )}
