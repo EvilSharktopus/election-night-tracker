@@ -18,6 +18,7 @@ export function StudentPortal() {
   const queuedActions = useGameStore(state => state.queuedActions);
   const actionLog = useGameStore(state => state.actionLog);
   const updatePartyLogo = useGameStore(state => state.updatePartyLogo);
+  const updatePartyPassword = useGameStore(state => state.updatePartyPassword);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const UPGRADE_DESCS: Record<string, string> = {
@@ -44,6 +45,8 @@ export function StudentPortal() {
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pin, setPin] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
 
   // Action form state
   const [actionType, setActionType] = useState<ActionPayload['actionType']>('fundraise');
@@ -64,12 +67,26 @@ export function StudentPortal() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pin.toLowerCase() === expectedPin) {
+    const isCorrect = party?.password ? pin === party.password : pin.toLowerCase() === expectedPin;
+    if (isCorrect) {
       setIsAuthenticated(true);
       toast.success(`Welcome, ${party?.name}!`);
     } else {
       toast.error('Incorrect PIN. Ask your teacher.');
     }
+  };
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!party) return;
+    if (newPassword.trim().length < 4) {
+      toast.error('Password must be at least 4 characters.');
+      return;
+    }
+    updatePartyPassword(party.id, newPassword.trim());
+    toast.success('Password changed successfully!');
+    setNewPassword('');
+    setShowSettings(false);
   };
 
   const buildPayload = (): ActionPayload => {
@@ -260,21 +277,58 @@ export function StudentPortal() {
             <div className="text-xs text-neutral-500 leading-tight">Round {round} · {phase}</div>
           </div>
         </div>
-        <div className="flex gap-4 text-right">
-          <div>
-            <div className="text-xs text-neutral-500 uppercase tracking-wider">AP</div>
-            <div className="font-black text-xl text-blue-400">{party.ap}</div>
-          </div>
-          <div>
-            <div className="text-xs text-neutral-500 uppercase tracking-wider">Funds</div>
-            <div className="font-black text-xl text-green-400">${party.funds}</div>
-          </div>
-          <div>
-            <div className="text-xs text-neutral-500 uppercase tracking-wider">Seats</div>
-            <div className="font-black text-xl text-yellow-400">{currentSeats}</div>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setShowSettings(true)}
+            className="text-neutral-400 hover:text-white transition-colors"
+            title="Party Settings"
+          >
+            ⚙️
+          </button>
+          <div className="flex gap-4 text-right">
+            <div>
+              <div className="text-xs text-neutral-500 uppercase tracking-wider">AP</div>
+              <div className="font-black text-xl text-blue-400">{party.ap}</div>
+            </div>
+            <div>
+              <div className="text-xs text-neutral-500 uppercase tracking-wider">Funds</div>
+              <div className="font-black text-xl text-green-400">${party.funds}</div>
+            </div>
+            <div>
+              <div className="text-xs text-neutral-500 uppercase tracking-wider">Seats</div>
+              <div className="font-black text-xl text-yellow-400">{currentSeats}</div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold">Party Settings</h2>
+              <button onClick={() => setShowSettings(false)} className="text-neutral-500 hover:text-white">✕</button>
+            </div>
+            <form onSubmit={handleChangePassword}>
+              <label className="block text-xs text-neutral-500 uppercase tracking-wider mb-2">Change Password</label>
+              <input
+                type="text"
+                placeholder="New Password"
+                className="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500 mb-4"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors"
+              >
+                Update Password
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Pending Submissions Banner */}
       {myPendingItems.length > 0 && (

@@ -42,6 +42,7 @@ export interface Party {
   name: string;
   color: string;
   logo?: string;          // base64 data URL from student-created image
+  password?: string;
   ap: number;
   funds: number;
   upgrades: UpgradeId[];
@@ -123,4 +124,5 @@ export interface GameState {
   overwriteState: (state: Partial<GameState>) => void;
   updateLogMessage: (id: string, message: string) => void;
   updatePartyLogo: (partyId: string, logo: string) => void;
+  updatePartyPassword: (partyId: string, password: string) => void;
 }

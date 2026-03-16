@@ -340,6 +340,9 @@ export function TeacherDashboard() {
                      <span>Funds: <span className="font-bold text-green-400 font-mono">${p.funds}</span></span>
                      <span>AP: <span className="font-bold text-blue-400 font-mono">{p.ap}</span></span>
                    </div>
+                   <div className="flex justify-between items-center text-xs text-neutral-400">
+                     <span>PIN: <span className="text-sky-400 font-mono font-bold tracking-wider">{p.password || p.name.toLowerCase().slice(0, 4)}</span></span>
+                   </div>
                    <details className="mt-1 text-xs text-neutral-400 group">
                      <summary className="cursor-pointer hover:text-white transition-colors duration-200 select-none">
                        View Tech & Ops ({p.upgrades.length} / {darkOps.filter(o => o.sourcePartyId === p.id).length})
@@ -394,70 +397,87 @@ export function TeacherDashboard() {
               No pending student actions. They'll appear here automatically.
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
-              {queuedActions.map(req => {
-                const actor = parties.find(p => p.id === req.payload.partyId);
-                const targetRiding = ridings.find(r => r.id === req.payload.targetRidingId);
-                const targetParty = parties.find(p => p.id === req.payload.targetPartyId);
+            <div className="flex flex-col gap-6">
+              {Object.entries(
+                queuedActions.reduce((acc, req) => {
+                  const type = req.payload.actionType;
+                  if (!acc[type]) acc[type] = [];
+                  acc[type].push(req);
+                  return acc;
+                }, {} as Record<string, typeof queuedActions>)
+              ).sort(([a], [b]) => a.localeCompare(b)).map(([type, actions]) => (
+                <div key={type} className="space-y-2">
+                  <h3 className="text-xs font-bold text-neutral-500 uppercase flex items-center gap-2 border-b border-neutral-800 pb-1 mb-2">
+                    {type.replace('_', ' ')}
+                    <span className="bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded text-[10px]">{actions.length}</span>
+                  </h3>
+                  <div className="flex flex-col gap-2">
+                    {actions.map(req => {
+                      const actor = parties.find(p => p.id === req.payload.partyId);
+                      const targetRiding = ridings.find(r => r.id === req.payload.targetRidingId);
+                      const targetParty = parties.find(p => p.id === req.payload.targetPartyId);
 
-                return (
-                  <div key={req.id} className="bg-neutral-800 border border-neutral-700 rounded-lg p-3 flex flex-col gap-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: actor?.color }} />
-                          <span className="font-bold text-sm" style={{ color: actor?.color }}>{actor?.name}</span>
-                          <span className="text-neutral-500 text-xs">→</span>
-                          <span className="bg-neutral-700 text-neutral-200 text-xs font-bold uppercase px-1.5 py-0.5 rounded">{req.payload.actionType.replace('_', ' ')}</span>
+                      return (
+                        <div key={req.id} className="bg-neutral-800 border border-neutral-700 rounded-lg p-3 flex flex-col gap-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: actor?.color }} />
+                                <span className="font-bold text-sm" style={{ color: actor?.color }}>{actor?.name}</span>
+                                <span className="text-neutral-500 text-xs">→</span>
+                                <span className="bg-neutral-700 text-neutral-200 text-xs font-bold uppercase px-1.5 py-0.5 rounded">{req.payload.actionType.replace('_', ' ')}</span>
+                              </div>
+                              <div className="text-xs text-neutral-400 space-y-0.5 pl-4">
+                                {targetRiding && <div>Riding: <span className="text-white">{targetRiding.name}</span></div>}
+                                {targetParty && <div>Target: <span className="text-white">{targetParty.name}</span></div>}
+                                {req.payload.demographic && <div>Demo: <span className="text-white">{req.payload.demographic}</span></div>}
+                                {req.payload.medium && <div>Medium: <span className="text-white">{req.payload.medium}</span></div>}
+                                {req.payload.cost && req.payload.cost > 0 && <div>Spend: <span className="text-green-400 font-mono">${req.payload.cost}</span></div>}
+                                {req.payload.upgradeId && <div>Upgrade: <span className="text-purple-400">{req.payload.upgradeId.replace('_', ' ')}</span></div>}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                const logBefore = useGameStore.getState().actionLog.length;
+                                applyAction(req);
+                                removeQueuedAction(req.id);
+                                toast.success(`✅ Approved: ${actor?.name} — ${req.payload.actionType}`);
+                                // Async: replace the plain log message with AI flavor text
+                                const newEntries = useGameStore.getState().actionLog;
+                                const newEntry = newEntries[newEntries.length - 1];
+                                if (newEntry && newEntries.length > logBefore) {
+                                  import('../utils/flavorText').then(({ generateFlavorText }) => {
+                                    const tParty = parties.find(p => p.id === req.payload.targetPartyId);
+                                    const tRiding = ridings.find(r => r.id === req.payload.targetRidingId);
+                                    generateFlavorText(
+                                      { actionType: req.payload.actionType, partyName: actor?.name ?? 'A party', targetPartyName: tParty?.name, ridingName: tRiding?.name },
+                                      newEntry.message
+                                    ).then(msg => updateLogMessage(newEntry.id, msg));
+                                  });
+                                }
+                              }}
+                              className="flex-1 bg-green-700 hover:bg-green-600 text-white text-sm font-bold py-1.5 px-3 rounded transition-colors"
+                            >
+                              ✓ Approve
+                            </button>
+                            <button
+                              onClick={() => {
+                                removeQueuedAction(req.id);
+                                toast.error(`❌ Rejected: ${actor?.name} — ${req.payload.actionType}`);
+                              }}
+                              className="flex-1 bg-red-900 hover:bg-red-800 text-white text-sm font-bold py-1.5 px-3 rounded transition-colors"
+                            >
+                              ✗ Reject
+                            </button>
+                          </div>
                         </div>
-                        <div className="text-xs text-neutral-400 space-y-0.5 pl-4">
-                          {targetRiding && <div>Riding: <span className="text-white">{targetRiding.name}</span></div>}
-                          {targetParty && <div>Target: <span className="text-white">{targetParty.name}</span></div>}
-                          {req.payload.demographic && <div>Demo: <span className="text-white">{req.payload.demographic}</span></div>}
-                          {req.payload.medium && <div>Medium: <span className="text-white">{req.payload.medium}</span></div>}
-                          {req.payload.cost && req.payload.cost > 0 && <div>Spend: <span className="text-green-400 font-mono">${req.payload.cost}</span></div>}
-                          {req.payload.upgradeId && <div>Upgrade: <span className="text-purple-400">{req.payload.upgradeId.replace('_', ' ')}</span></div>}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          const logBefore = useGameStore.getState().actionLog.length;
-                          applyAction(req);
-                          removeQueuedAction(req.id);
-                          toast.success(`✅ Approved: ${actor?.name} — ${req.payload.actionType}`);
-                          // Async: replace the plain log message with AI flavor text
-                          const newEntries = useGameStore.getState().actionLog;
-                          const newEntry = newEntries[newEntries.length - 1];
-                          if (newEntry && newEntries.length > logBefore) {
-                            import('../utils/flavorText').then(({ generateFlavorText }) => {
-                              const tParty = parties.find(p => p.id === req.payload.targetPartyId);
-                              const tRiding = ridings.find(r => r.id === req.payload.targetRidingId);
-                              generateFlavorText(
-                                { actionType: req.payload.actionType, partyName: actor?.name ?? 'A party', targetPartyName: tParty?.name, ridingName: tRiding?.name },
-                                newEntry.message
-                              ).then(msg => updateLogMessage(newEntry.id, msg));
-                            });
-                          }
-                        }}
-                        className="flex-1 bg-green-700 hover:bg-green-600 text-white text-sm font-bold py-1.5 px-3 rounded transition-colors"
-                      >
-                        ✓ Approve
-                      </button>
-                      <button
-                        onClick={() => {
-                          removeQueuedAction(req.id);
-                          toast.error(`❌ Rejected: ${actor?.name} — ${req.payload.actionType}`);
-                        }}
-                        className="flex-1 bg-red-900 hover:bg-red-800 text-white text-sm font-bold py-1.5 px-3 rounded transition-colors"
-                      >
-                        ✗ Reject
-                      </button>
-                    </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </div>
