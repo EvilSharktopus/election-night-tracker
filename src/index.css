@@ -1,4 +1,14 @@
 @import "tailwindcss";
+
+@theme {
+  --animate-ticker: ticker 40s linear infinite;
+
+  @keyframes ticker {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+  }
+}
+
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
