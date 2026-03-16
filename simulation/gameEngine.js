@@ -286,9 +286,10 @@ function resolveAction(state, actionReq, debateMultiplier = 1) {
     // ── Research ───────────────────────────────────────────────────────────────
     case 'research': {
       if (payload.targetRidingId && !sourceParty.researched.includes(payload.targetRidingId)) {
+        sourceParty.funds = Math.max(0, sourceParty.funds - 2);
         sourceParty.researched.push(payload.targetRidingId);
         const riding = s.ridings.find(r => r.id === payload.targetRidingId);
-        logMessage = `${sourceParty.name} researched ${riding?.name ?? 'a riding'}.`;
+        logMessage = `${sourceParty.name} researched ${riding?.name ?? 'a riding'} for $2.`;
       }
       break;
     }
