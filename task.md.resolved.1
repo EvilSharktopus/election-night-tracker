@@ -1,0 +1,33 @@
+# Election Game Development Tasks
+
+## Phase 1: Architecture & Setup
+- [/] Initialize Next.js project (React + Next API Routes)
+- [ ] Define shared game state types (Parties, Ridings, Demographics, Actions)
+- [ ] Set up global state management (e.g., Zustand or React Context) and/or local database architecture for syncing between Teacher/Student/Public views.
+
+## Phase 2: Core Game Mechanics Data
+- [ ] Implement hidden demographics and riding generation logic
+- [ ] Implement Action Points (AP) and Funds economy rules
+- [ ] Define Tech Tree (Research actions that unlock tiers)
+- [ ] Define Sabotage Mechanics (Scandal, Misinformation, Hack)
+
+## Phase 3: Teacher Dashboard (Game Master)
+- [ ] Game Setup UI (Create parties, generate ridings, configure rules)
+- [ ] Action Review Queue (Approve/deny student actions)
+- [ ] Override and manual point editing tools
+
+## Phase 4: Student Submission Portal
+- [ ] Party dashboard showing AP, Funds, Current Tech Tier
+- [ ] Action submission forms (Campaign, Research, Sabotage)
+- [ ] Notifications/Results of submitted actions (from Teacher queue)
+
+## Phase 5: Public Board (Projector View)
+- [ ] Modern UI layout setup
+- [ ] Interactive region-drilldown map (SVG or map library) demonstrating riding control
+- [ ] Real-time updates based on Teacher approvals
+
+## Phase 6: End Game & Polish
+- [ ] Leaders' Debate phase mechanics
+- [ ] "Election Night Live" visual simulation mode
+- [ ] AI-generated flavor text integration (if requested via LLM APIs)
+- [ ] Custom Student Flair integrations
